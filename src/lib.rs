@@ -1,8 +1,11 @@
 use clap::{arg, Command, ArgMatches};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use std::{fs, io, error};
+use std::io::Write;
 use std::path::PathBuf;
 use std::collections::HashMap;
 
+/* CLI argument parsing via clap crate */
 pub fn args() -> ArgMatches {
     Command::new("readdir")
         .version("1.0")
@@ -14,7 +17,9 @@ pub fn args() -> ArgMatches {
         .get_matches()
 }
 
-fn read_contents(buf: PathBuf, flags: &HashMap<char, bool>) {
+/* Reads the directory contents and prints them to stdout */
+fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<char, bool>)
+                   -> Result<(), Box<dyn error::Error>> {
     let mut entries: Vec<PathBuf> = fs::read_dir(buf.as_path())
         .unwrap()
         .map(|res| res.map(|e| e.path()))
@@ -27,27 +32,41 @@ fn read_contents(buf: PathBuf, flags: &HashMap<char, bool>) {
         .map(|s| s.to_str().unwrap())
         .collect();
 
-    for filename in filenames{
-        if !flags[&'a'] && filename.starts_with('.') { continue; }
-        println!("{}", filename);
+    for i in 0..filenames.len() {
+        if !flags[&'a'] && filenames[i].starts_with('.') { continue; }
+        if entries[i].is_dir() {
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
+        } else {
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+        }
+        writeln!(&mut *stdout, "{}", filenames[i])?;
     }
+
+    Ok(())
 }
 
+/* Function is called from main.rs; program exits with an error if anything fails. */
 pub fn run(args: clap::ArgMatches) -> Result<(), Box<dyn error::Error>> {
+    // flags parsed from arguments, normal CLI stuff
     let flags = HashMap::from([
         ('a', args.is_present("all")),
         ('v', args.is_present("verbose")),
     ]);
 
+    // Set up stdout stream (as opposed to a buffer)
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+
+    // If user entered no optional paths to be read, just read the current directory.
     let dirs: Option<_> = args.values_of("DIRECTORY");
     if dirs.is_none() {
         let current_dir = std::env::current_dir()?;
-        read_contents(current_dir, &flags);
+        write_to_stdout(&mut stdout, current_dir, &flags)?;
     } else {
         for dir in dirs.unwrap().collect::<Vec<_>>() {
             let dir_path = fs::canonicalize(dir)?;
-            println!(" ==> {} <== ", dir_path.as_os_str().to_str().unwrap());
-            read_contents(dir_path, &flags);
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;     // It can change
+            writeln!(&mut stdout, " ==> {} <== ", dir_path.as_os_str().to_str().unwrap())?;
+            write_to_stdout(&mut stdout, dir_path, &flags)?;
         }
     }
 
