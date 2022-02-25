@@ -12,7 +12,7 @@ pub fn args() -> ArgMatches {
         .author("benharmonics")
         .about("Reads items in a given directory")
         .arg(arg!(-a --all "Show hidden files"))
-        .arg(arg!(-v --verbose "Show more info"))
+        .arg(arg!(-r --reverse "Reverse output order"))
         .arg(arg!([DIRECTORY] ... "One or more directories to read"))
         .get_matches()
 }
@@ -20,25 +20,47 @@ pub fn args() -> ArgMatches {
 /* Reads the directory contents and prints them to stdout */
 fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<char, bool>)
                    -> Result<(), Box<dyn error::Error>> {
-    let mut entries: Vec<PathBuf> = fs::read_dir(buf.as_path())
+    let mut all_entries: Vec<PathBuf> = fs::read_dir(buf.as_path())
         .unwrap()
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<PathBuf>, io::Error>>()
         .unwrap_or(vec![]);
-    entries.sort();
+    all_entries.sort();
 
-    let filenames: Vec<&str> = entries.iter()
+    // Reverse
+    if flags[&'r'] { all_entries.reverse(); }
+
+    let mut dirs = Vec::new();
+    let mut files = Vec::new();
+
+    for entry in all_entries {
+        // Ignore hidden files
+        if !flags[&'a'] && entry.file_name().unwrap().to_str().unwrap().starts_with('.') { continue; }
+        if entry.is_dir() {
+            dirs.push(entry);
+        } else {
+            files.push(entry);
+        }
+    }
+
+    // Get just the filename/dirname from each PathBuf and collect them into vectors
+    let filenames: Vec<&str> = files.iter()
+        .map(|p| p.file_name().unwrap())
+        .map(|s| s.to_str().unwrap())
+        .collect();
+    let dirnames: Vec<&str> = dirs.iter()
         .map(|p| p.file_name().unwrap())
         .map(|s| s.to_str().unwrap())
         .collect();
 
-    for i in 0..filenames.len() {
-        if !flags[&'a'] && filenames[i].starts_with('.') { continue; }
-        if entries[i].is_dir() {
-            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
-        } else {
-            stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
-        }
+    for i in 0..dirs.len() {
+        // Setting the correct color
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)).set_bold(true))?;
+        writeln!(&mut *stdout, "{}", dirnames[i])?;
+    }
+    for i in 0..files.len() {
+        // Setting the correct color
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
         writeln!(&mut *stdout, "{}", filenames[i])?;
     }
 
@@ -50,7 +72,7 @@ pub fn run(args: clap::ArgMatches) -> Result<(), Box<dyn error::Error>> {
     // flags parsed from arguments, normal CLI stuff
     let flags = HashMap::from([
         ('a', args.is_present("all")),
-        ('v', args.is_present("verbose")),
+        ('r', args.is_present("reverse")),
     ]);
 
     // Set up stdout stream (as opposed to a buffer)
