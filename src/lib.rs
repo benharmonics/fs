@@ -3,7 +3,7 @@ use std::{fs, io, error};
 use std::path::PathBuf;
 use std::collections::HashMap;
 
-pub fn get_matches() -> ArgMatches {
+pub fn args() -> ArgMatches {
     Command::new("readdir")
         .version("1.0")
         .author("benharmonics")
@@ -14,8 +14,8 @@ pub fn get_matches() -> ArgMatches {
         .get_matches()
 }
 
-fn read_contents(p: PathBuf, flags: &HashMap<char, bool>) {
-    let mut entries = fs::read_dir(p.as_path())
+fn read_contents(buf: PathBuf, flags: &HashMap<char, bool>) {
+    let mut entries: Vec<PathBuf> = fs::read_dir(buf.as_path())
         .unwrap()
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<PathBuf>, io::Error>>()

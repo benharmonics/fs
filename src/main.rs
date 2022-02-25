@@ -1,6 +1,6 @@
 fn main() {
-    let matches = readdir::get_matches();
-    if let Err(e) = readdir::run(matches) {
+    let args = readdir::args();
+    if let Err(e) = readdir::run(args) {
         eprintln!("Application error: {}", e);
         std::process::exit(1);
     }
