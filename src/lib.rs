@@ -4,6 +4,7 @@ use std::{fs, io, cmp, error};
 use std::io::Write;
 use std::path::PathBuf;
 use std::collections::HashMap;
+use std::os::unix::fs::PermissionsExt;
 
 /* CLI argument parsing via clap crate */
 pub fn args() -> ArgMatches {
@@ -12,6 +13,7 @@ pub fn args() -> ArgMatches {
         .author("benharmonics")
         .about("Reads items in a given directory")
         .arg(arg!(-a --all "Show hidden files"))
+        .arg(arg!(-U --unsorted "Don't sort items (use directory ordering)"))
         .arg(arg!(-r --reverse "Reverse output order"))
         .arg(arg!(-s --size "Get file size (in bytes)"))
         .arg(Arg::new("human-readable")
@@ -55,8 +57,13 @@ fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<ch
         }
     }
 
-    // Reverse, if reverse flag is set
-    if flags[&'r'] { dirs.reverse(); files.reverse(); }
+    // Sorting alphabetically
+    if !flags[&'U'] {
+        dirs.sort(); files.sort();
+        // Reverse, if reverse flag is set
+        if flags[&'r'] { dirs.reverse(); files.reverse(); }
+    }
+
 
     // Get just the filename/dirname from each PathBuf and collect them into vectors
     let filenames: Vec<&str> = files.iter()
@@ -88,6 +95,8 @@ fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<ch
             let size = if !flags[&'h'] { format!("{} B", attrs.len()) } else { pretty_filesize(attrs.len()) };
             write!(&mut *stdout, "({}) ", size)?;
         }
+        // Print filename in green if it's executable
+        if attrs.permissions().mode() & 0o111 != 0 { stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?; }
         writeln!(&mut *stdout, "{}", filenames[i])?;
     }
 
@@ -100,6 +109,7 @@ pub fn run(args: clap::ArgMatches) -> Result<(), Box<dyn error::Error>> {
     let flags = HashMap::from([
         ('a', args.is_present("all")),
         ('r', args.is_present("reverse")),
+        ('U', args.is_present("unsorted")),
         ('s', args.is_present("size")),
         ('h', args.is_present("human-readable")),
     ]);
@@ -115,7 +125,7 @@ pub fn run(args: clap::ArgMatches) -> Result<(), Box<dyn error::Error>> {
     } else {
         for dir in dirs.unwrap().collect::<Vec<_>>() {
             let dir_path = fs::canonicalize(dir)?;
-            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;     // It can change
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;     // font color changes
             writeln!(&mut stdout, " ==> {} <== ", dir_path.as_os_str().to_str().unwrap())?;
             write_to_stdout(&mut stdout, dir_path, &flags)?;
         }
