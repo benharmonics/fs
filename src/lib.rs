@@ -99,7 +99,7 @@ fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<ch
     for i in 0..files.len() {
         // Check for broken symbolic links or inaccessible metadata before continuing
         if !files[i].exists() {
-            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_intense(true))?;
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true))?;
             writeln!(&mut *stdout, "{}", file_names[i])?;
             continue;
         }
