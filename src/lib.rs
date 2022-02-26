@@ -100,13 +100,17 @@ fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<ch
         // Check for broken symbolic links or inaccessible metadata before continuing
         if !files[i].exists() {
             stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true))?;
-            writeln!(&mut *stdout, "{}", file_names[i])?;
+            write!(&mut *stdout, "{}", file_names[i])?;
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)).set_bold(false))?;
+            writeln!(&mut *stdout, " [unable to read metadata]")?;
             continue;
         }
 
         // If file has accessible metadata:
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
         let attrs: fs::Metadata = files[i].metadata().unwrap();
+
+        // Printing size of file
         if flags[&'s'] {
             let size = if !flags[&'h'] { format!("{} B", attrs.len()) } else { pretty_filesize(attrs.len()) };
             write!(&mut *stdout, "({}) ", size)?;
@@ -114,6 +118,9 @@ fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<ch
 
         // Print filename in green if it's executable
         if attrs.permissions().mode() & 0o111 != 0 { stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?; }
+        // Print filename in cyan if it's a symbolic link
+        if files[i].is_symlink() { stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?; }
+        // Print filename
         writeln!(&mut *stdout, "{}", file_names[i])?;
     }
 
