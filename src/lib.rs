@@ -67,44 +67,54 @@ fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<ch
 
 
     // Get just the filename/dirname from each PathBuf and collect them into vectors
-    let filenames: Vec<&str> = files.iter()
+    let file_names: Vec<&str> = files.iter()
         .map(|p| p.file_name().unwrap())
         .map(|s| s.to_str().unwrap())
         .collect();
-    let dirnames: Vec<&str> = dirs.iter()
+    let dir_names: Vec<&str> = dirs.iter()
         .map(|p| p.file_name().unwrap())
         .map(|s| s.to_str().unwrap())
         .collect();
 
+    // Looping over directories
     for i in 0..dirs.len() {
-        // Setting the correct color
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)).set_bold(true))?;
-
         // Getting file metadata
         let attrs = dirs[i].metadata()?;
         // Write file size to console if 's' flag used
         if flags[&'s'] {
+            // Setting the correct color (White for all file sizes)
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
             let size = if !flags[&'h'] { format!("{} B", attrs.len()) } else { pretty_filesize(attrs.len()) };
             write!(&mut *stdout, "({}) ", size)?;
         }
-        writeln!(&mut *stdout, "{}", dirnames[i])?;
+
+        // Setting the correct color (Blue and bold for directories)
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)).set_bold(true))?;
+
+        // Write to stdout
+        writeln!(&mut *stdout, "{}", dir_names[i])?;
     }
+
+    // Looping over files in much the same way
     for i in 0..files.len() {
         // Check for broken symbolic links or inaccessible metadata before continuing
         if !files[i].exists() {
-            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
-            writeln!(&mut *stdout, "{}", filenames[i])?;
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_intense(true))?;
+            writeln!(&mut *stdout, "{}", file_names[i])?;
             continue;
         }
+
+        // If file has accessible metadata:
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
-        let attrs = files[i].metadata().unwrap();
+        let attrs: fs::Metadata = files[i].metadata().unwrap();
         if flags[&'s'] {
             let size = if !flags[&'h'] { format!("{} B", attrs.len()) } else { pretty_filesize(attrs.len()) };
             write!(&mut *stdout, "({}) ", size)?;
         }
+
         // Print filename in green if it's executable
         if attrs.permissions().mode() & 0o111 != 0 { stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?; }
-        writeln!(&mut *stdout, "{}", filenames[i])?;
+        writeln!(&mut *stdout, "{}", file_names[i])?;
     }
 
     Ok(())
