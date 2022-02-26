@@ -43,6 +43,7 @@ fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<ch
         .collect::<Result<Vec<PathBuf>, io::Error>>()
         .unwrap_or(vec![]);
 
+    // We're going to print directories before files, so we separate them into two vectors now.
     let mut dirs = Vec::new();
     let mut files = Vec::new();
 
@@ -89,8 +90,14 @@ fn write_to_stdout(stdout: &mut StandardStream, buf: PathBuf, flags: &HashMap<ch
         writeln!(&mut *stdout, "{}", dirnames[i])?;
     }
     for i in 0..files.len() {
+        // Check for broken symbolic links or inaccessible metadata before continuing
+        if !files[i].exists() {
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+            writeln!(&mut *stdout, "{}", filenames[i])?;
+            continue;
+        }
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
-        let attrs = files[i].metadata()?;
+        let attrs = files[i].metadata().unwrap();
         if flags[&'s'] {
             let size = if !flags[&'h'] { format!("{} B", attrs.len()) } else { pretty_filesize(attrs.len()) };
             write!(&mut *stdout, "({}) ", size)?;
