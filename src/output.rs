@@ -61,9 +61,9 @@ fn write_dir_contents_to_buffer<W: WriteColor>(
         .map(|&e| e.file_name().unwrap().to_str().unwrap().len())
         .max()
         .unwrap();
-    let buffer_width: usize = length_of_longest_entry + 2;
     let console_width: usize = console_width();
-    let entries_per_line: usize = console_width / buffer_width;
+    let buffer_width: usize = cmp::min(length_of_longest_entry + 2, console_width);
+    let entries_per_line: usize = cmp::max(console_width / buffer_width, 1);
 
     for (i, entry) in entries.iter().enumerate() {
         // File name
