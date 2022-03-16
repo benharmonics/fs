@@ -115,7 +115,11 @@ fn write_dir_contents_to_buffer<W: WriteColor>(
                 human_readable_filesize(attrs.len(), false)?
             };
             write!(buffer, "{}", right_pad(&file_size, 10))?;
-            writeln!(buffer, "{}", outstr)?;
+            if i < entries.len() - 1 {
+                writeln!(buffer, "{}", outstr)?;
+            } else {
+                write!(buffer, "{}", outstr)?;
+            }
             continue;
         }
 
@@ -162,8 +166,10 @@ fn human_readable_filesize(num: u64, base_1000: bool) -> Result<String, Box<dyn 
     let units = ["B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let delimiter = if base_1000 { 1000_f64 } else { 1024_f64 };
     let exponent = cmp::min(((num as f64).ln() / delimiter.ln()).floor() as i32, (units.len() - 1) as i32);
+    if exponent as usize > units.len() - 1 {
+        return Ok(format!("{} B", num))
+    }
     let size_as_float = format!("{:.2}", (num as f64) / delimiter.powi(exponent)).parse::<f64>()?;
-    if exponent as usize > units.len() - 1 { return Ok(format!("{} B", num)) }
     let unit = units[exponent as usize];
     Ok(format!("{} {}", size_as_float, unit))
 }
