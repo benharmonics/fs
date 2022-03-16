@@ -100,7 +100,7 @@ fn write_to_buffer<W: WriteColor>(
         }
 
         // We will pad the file name to a fixed width
-        let outstr = if buffer_width * entries_per_line <= console_width {
+        let outstr = if buffer_width * entries.len() <= console_width {
             right_pad(name, name.len() + 2)
         } else {
             right_pad(name, buffer_width)
