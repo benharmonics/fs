@@ -1,11 +1,11 @@
 pub mod config;
 mod output;
 
-use std::{fs, env};
+use std::{fs, env, collections, error};
 use termcolor::{BufferWriter, ColorChoice};
 
-pub fn run(args: clap::ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
-    let flags = std::collections::HashMap::from([
+pub fn run(args: clap::ArgMatches) -> Result<(), Box<dyn error::Error>> {
+    let flags = collections::HashMap::from([
         ('a', args.is_present("all")),
         ('r', args.is_present("reverse")),
         ('u', args.is_present("unsorted")),

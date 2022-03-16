@@ -10,7 +10,7 @@ pub fn print_entries<W: WriteColor>(
     buffer: &mut W, 
     path: &Path, 
     flags: &HashMap<char, bool>
-) -> io::Result<()> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut pathbufs = fs::read_dir(path)
         .unwrap()
         .map(|res| res.map(|e| e.path()))
@@ -44,7 +44,7 @@ fn write_dir_contents_to_buffer<W: WriteColor>(
     buffer: &mut W, 
     entries: Vec<&Path>, 
     flags: &HashMap<char, bool>
-) -> io::Result<()> {
+) -> Result<(), Box<dyn std::error::Error>> {
     // I'm not sure if it's efficient to specify colors up front here...
     let mut blue = ColorSpec::new();
     let mut cyan = ColorSpec::new();
