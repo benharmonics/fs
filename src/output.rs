@@ -99,8 +99,12 @@ fn write_to_buffer<W: WriteColor>(
             buffer.set_color(&green)?;
         }
 
-        // We will print the file name padded to a fixed width
-        let outstr = right_pad(name, buffer_width);
+        // We will pad the file name to a fixed width
+        let outstr = if buffer_width * entries_per_line <= console_width {
+            right_pad(name, name.len() + 2)
+        } else {
+            right_pad(name, buffer_width)
+        };
 
         // Printing out the file size throws off the whole formatting scheme, so it's a separate thing here.
         if flags[&'s'] {
