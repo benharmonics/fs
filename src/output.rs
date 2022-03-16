@@ -93,7 +93,9 @@ fn write_to_buffer<W: WriteColor>(
         if entry.is_symlink() {
             buffer.set_color(&cyan)?;
         } 
-        if attrs.permissions().mode() & 0o111 != 0 {
+        if attrs.permissions().mode() & 0o111 != 0
+            && !entry.is_dir()
+        {
             buffer.set_color(&green)?;
         }
 
