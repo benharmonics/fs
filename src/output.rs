@@ -10,19 +10,18 @@ pub fn print_entries<W: WriteColor>(
     buffer: &mut W, 
     path: &Path, 
     flags: &HashMap<char, bool>
-) {
+) -> io::Result<()> {
     let mut pathbufs = fs::read_dir(path)
         .unwrap()
         .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<PathBuf>, _>>()
-        .unwrap();
+        .collect::<Result<Vec<PathBuf>, _>>()?;
 
     // Don't retain hidden files (that start with '.')
     if !flags[&'a'] {
         pathbufs.retain(|e| !e.file_name().unwrap().to_str().unwrap().starts_with('.'));
     }
     // Leave items unsorted if -U flag was used
-    if !flags[&'U'] {
+    if !flags[&'u'] {
         pathbufs.sort();
     }
     // Reverse the items if -r flag was used
@@ -34,19 +33,19 @@ pub fn print_entries<W: WriteColor>(
     let entries: Vec<&Path> = pathbufs.iter().map(|b| b.as_path()).collect();
 
     // Writing to the buffer
-    if let Err(e) = write_to_buffer(buffer, entries, flags) {
-        eprintln!("Could not write to output: {}", e);
-    }
-
+    write_dir_contents_to_buffer(buffer, entries, flags)?;
     // A last newline for formatting
     writeln!(buffer, "").unwrap();
+
+    Ok(())
 }
 
-fn write_to_buffer<W: WriteColor>(
+fn write_dir_contents_to_buffer<W: WriteColor>(
     buffer: &mut W, 
     entries: Vec<&Path>, 
     flags: &HashMap<char, bool>
 ) -> io::Result<()> {
+    // I'm not sure if it's efficient to specify colors up front here...
     let mut blue = ColorSpec::new();
     let mut cyan = ColorSpec::new();
     let mut green = ColorSpec::new();
@@ -58,26 +57,26 @@ fn write_to_buffer<W: WriteColor>(
     white.set_fg(Some(Color::White));
     red.set_fg(Some(Color::Red)).set_bold(true);
 
-    let longest_entry: usize = entries.iter()
+    let length_of_longest_entry: usize = entries.iter()
         .map(|&e| e.file_name().unwrap().to_str().unwrap().len())
         .max()
         .unwrap();
-    let buffer_width: usize = longest_entry + 2;
+    let buffer_width: usize = length_of_longest_entry + 2;
     let console_width: usize = console_width();
     let entries_per_line: usize = console_width / buffer_width;
 
     for (i, entry) in entries.iter().enumerate() {
         // File name
-        let name = entry.file_name().unwrap_or(std::ffi::OsStr::new("")).to_str().unwrap_or("");
+        let filename: &str = entry.file_name().unwrap_or(std::ffi::OsStr::new("")).to_str().unwrap_or("");
         // Handle missing files / broken symlinks
         if !entry.exists() {
             buffer.set_color(&red)?;
             if i % entries_per_line == entries_per_line - 1 
                 && i != entries.len() - 1
             {
-                writeln!(buffer, "{}", right_pad(name, buffer_width))?;
+                writeln!(buffer, "{}", right_pad(filename, buffer_width))?;
             } else {
-                write!(buffer, "{}", right_pad(name, buffer_width))?;
+                write!(buffer, "{}", right_pad(filename, buffer_width))?;
             }
             continue;
         }
@@ -101,9 +100,9 @@ fn write_to_buffer<W: WriteColor>(
 
         // We will pad the file name to a fixed width
         let outstr = if buffer_width * entries.len() <= console_width {
-            right_pad(name, name.len() + 2)
+            right_pad(filename, filename.len() + 2)
         } else {
-            right_pad(name, buffer_width)
+            right_pad(filename, buffer_width)
         };
 
         // Printing out the file size throws off the whole formatting scheme, so it's a separate thing here.
@@ -131,6 +130,12 @@ fn write_to_buffer<W: WriteColor>(
         buffer.set_color(&white)?;
     }
 
+    Ok(())
+}
+
+pub fn write_str_to_buffer<W: WriteColor>(buffer: &mut W, s: &str) -> io::Result<()> {
+    buffer.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
+    writeln!(buffer, "➥ {}", s)?;
     Ok(())
 }
 

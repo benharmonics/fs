@@ -21,7 +21,7 @@ pub fn args() -> ArgMatches {
         .arg(
             Arg::new("unsorted")
                 .long("unsorted")
-                .short('U')
+                .short('u')
                 .help("Don't sort items (use directory ordering)"),
         )
         .arg(
