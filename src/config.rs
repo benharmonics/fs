@@ -7,7 +7,7 @@ pub fn args() -> ArgMatches {
         ColorChoice::Never
     };
 
-    Command::new("dircontents")
+    Command::new("readdir")
         .version("0.1.2")
         .author("benharmonics")
         .about("Reads names of items in a directory and prints them to console (like ls).")
@@ -28,7 +28,7 @@ pub fn args() -> ArgMatches {
             Arg::new("reverse")
                 .long("reverse")
                 .short('r')
-                .help("reverse output order"),
+                .help("Reverse output order"),
         )
         .arg(
             Arg::new("size")
@@ -40,13 +40,13 @@ pub fn args() -> ArgMatches {
             Arg::new("base-1000")
                 .long("base-1000")
                 .short('b')
-                .help("With '-s', display filesize in base 1000 bytes (by default, 1 kB = 1024 B).")
+                .help("With '-s', display filesize such that 1kB=1000B")
         )
         .arg(
             Arg::new("human-readable")
                 .long("human-readable")
                 .short('h')
-                .help("With '-s', gives size in a human-readable format (kB, MB, etc)")
+                .help("With '-s', gives file size in kB, MB, etc")
         )
         .arg(arg!([DIRECTORY] ... "One or more directories to read"))
         .get_matches()
