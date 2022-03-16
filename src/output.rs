@@ -110,9 +110,9 @@ fn write_dir_contents_to_buffer<W: WriteColor>(
             let file_size = if !flags[&'h'] { 
                 format!("{} B", attrs.len())
             } else if flags[&'b'] { 
-                human_readable_filesize(attrs.len(), true)
+                human_readable_filesize(attrs.len(), true)?
             } else {
-                human_readable_filesize(attrs.len(), false)
+                human_readable_filesize(attrs.len(), false)?
             };
             write!(buffer, "{}", right_pad(&file_size, 10))?;
             writeln!(buffer, "{}", outstr)?;
@@ -141,11 +141,10 @@ pub fn write_str_to_buffer<W: WriteColor>(buffer: &mut W, s: &str) -> io::Result
 
 // Width of the terminal (in chars)
 fn console_width() -> usize {
-    let size = terminal_size();
-    if let Some((Width(width), Height(_))) = size {
+    if let Some((Width(width), Height(_))) = terminal_size() {
         return width as usize
     }
-    eprintln!("Couldn't determine terminal width.");
+    eprintln!("ERROR: Couldn't determine terminal width.");
     50
 }
 
@@ -159,11 +158,12 @@ fn right_pad(s: &str, width: usize) -> String {
 }
 
 // Prints file sizes like 4.14 kB, 2.1 GB, etc.
-fn human_readable_filesize(num: u64, base_1000: bool) -> String {
+fn human_readable_filesize(num: u64, base_1000: bool) -> Result<String, Box<dyn error::Error>> {
     let units = ["B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let delimiter = if base_1000 { 1000_f64 } else { 1024_f64 };
     let exponent = cmp::min(((num as f64).ln() / delimiter.ln()).floor() as i32, (units.len() - 1) as i32);
-    let pretty_bytes = format!("{:.2}", (num as f64) / delimiter.powi(exponent)).parse::<f64>().unwrap(); 
+    let size_as_float = format!("{:.2}", (num as f64) / delimiter.powi(exponent)).parse::<f64>()?;
+    if exponent as usize > units.len() - 1 { return Ok(format!("{} B", num)) }
     let unit = units[exponent as usize];
-    format!("{} {}", pretty_bytes, unit)
+    Ok(format!("{} {}", size_as_float, unit))
 }
