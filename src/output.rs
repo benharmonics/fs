@@ -127,8 +127,8 @@ fn write_dir_contents_to_buffer<W: WriteColor>(
         } else {
             write!(buffer, "{}", outstr)?;
         }
-        buffer.set_color(&white)?;
     }
+    buffer.set_color(&white)?;
 
     Ok(())
 }
