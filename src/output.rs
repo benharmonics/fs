@@ -21,7 +21,15 @@ pub fn print_entries<W: WriteColor>(
     }
     // Leave items unsorted if -U flag was used
     if !flags[&'u'] {
-        pathbufs.sort();
+        pathbufs.sort_by(|a, b| {
+            a
+                .as_path()
+                .to_str()
+                .unwrap_or("")
+                .to_lowercase()
+                .partial_cmp(&b.as_path().to_str().unwrap_or("").to_lowercase())
+                .unwrap()
+        });
     }
     // Reverse the items if -r flag was used
     if flags[&'r'] {
