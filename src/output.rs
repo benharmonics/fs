@@ -11,7 +11,7 @@ pub fn print_entries<W: WriteColor>(
     path: &Path, 
     flags: &HashMap<char, bool>,
 ) -> Result<(), Box<dyn error::Error>> {
-    let mut pathbufs = fs::read_dir(path)?
+    let mut pathbufs: Vec<PathBuf> = fs::read_dir(path)?
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<PathBuf>, _>>()?;
 
