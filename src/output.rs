@@ -35,7 +35,7 @@ pub fn print_entries<W: WriteColor>(
     // Writing to the buffer
     write_dir_contents_to_buffer(buffer, entries, flags)?;
     // A last newline for formatting
-    writeln!(buffer, "").unwrap();
+    writeln!(buffer, "")?;
 
     Ok(())
 }
@@ -57,6 +57,8 @@ fn write_dir_contents_to_buffer<W: WriteColor>(
     white.set_fg(Some(Color::White));
     red.set_fg(Some(Color::Red)).set_bold(true);
 
+    // Note that both uses of unwrap can never fail here because each entry 
+    // has already been converted to a PathBuf
     let length_of_longest_entry: usize = entries.iter()
         .map(|&e| e.file_name().unwrap().to_str().unwrap().len())
         .max()
@@ -166,6 +168,8 @@ fn human_readable_filesize(num: u64, base_1000: bool) -> Result<String, Box<dyn 
     let units = ["B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let delimiter = if base_1000 { 1000_f64 } else { 1024_f64 };
     let exponent = cmp::min(((num as f64).ln() / delimiter.ln()).floor() as i32, (units.len() - 1) as i32);
+    // NOTE: the following if statement prevents an occasional panic 
+    // that I can't consistently reproduce.
     if exponent as usize > units.len() - 1 {
         return Ok(format!("{} B", num))
     }
