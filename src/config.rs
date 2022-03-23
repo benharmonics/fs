@@ -7,7 +7,7 @@ pub fn args() -> ArgMatches {
         ColorChoice::Never
     };
 
-    Command::new("readdir")
+    Command::new("fs")
         .version("0.1.2")
         .author("benharmonics")
         .about("Reads names of items in a directory and prints them to console (like ls).")
