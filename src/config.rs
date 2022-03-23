@@ -25,6 +25,12 @@ pub fn args() -> ArgMatches {
                 .help("Don't sort items (use directory ordering)"),
         )
         .arg(
+            Arg::new("case-sensitive")
+                .long("case-sensitive")
+                .short('c')
+                .help("Case-sensitive sorting")
+        )
+        .arg(
             Arg::new("reverse")
                 .long("reverse")
                 .short('r')

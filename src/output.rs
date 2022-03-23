@@ -19,18 +19,24 @@ pub fn print_entries<W: WriteColor>(
     if !flags[&'a'] {
         pathbufs.retain(|e| !e.file_name().unwrap().to_str().unwrap().starts_with('.'));
     }
-    // Leave items unsorted if -U flag was used
+
+    // Leave items unsorted if -u flag was used
     if !flags[&'u'] {
-        pathbufs.sort_by(|a, b| {
-            a
-                .as_path()
-                .to_str()
-                .unwrap_or("")
-                .to_lowercase()
-                .partial_cmp(&b.as_path().to_str().unwrap_or("").to_lowercase())
-                .unwrap()
-        });
+        if flags[&'c'] {
+            pathbufs.sort();    // case-sensitive sort by default
+        } else {
+            pathbufs.sort_by(|a, b| {   // case-insensitive sorting
+                a
+                    .as_path()
+                    .to_str()
+                    .unwrap_or("")
+                    .to_lowercase()
+                    .partial_cmp(&b.as_path().to_str().unwrap_or("").to_lowercase())
+                    .unwrap()
+            });
+        }
     }
+
     // Reverse the items if -r flag was used
     if flags[&'r'] {
         pathbufs.reverse();
@@ -47,6 +53,7 @@ pub fn print_entries<W: WriteColor>(
     Ok(())
 }
 
+/// Reads data from Paths & writes to buffer to be flushed later
 fn write_dir_contents_to_buffer<W: WriteColor>(
     buffer: &mut W, 
     entries: Vec<&Path>, 
@@ -141,18 +148,19 @@ fn write_dir_contents_to_buffer<W: WriteColor>(
             write!(buffer, "{}", outstr)?;
         }
     }
-    buffer.set_color(&white)?;
+    buffer.set_color(&white)?;  // Revert colors just in case - not useless
 
     Ok(())
 }
 
+/// Writes a plain string slice to a buffer in color
 pub fn write_str_to_buffer<W: WriteColor>(buffer: &mut W, s: &str) -> io::Result<()> {
     buffer.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
     writeln!(buffer, "➥ {}", s)?;
     Ok(())
 }
 
-// Width of the terminal (in chars)
+/// Width of the terminal (in chars)
 fn console_width() -> usize {
     if let Some((Width(width), Height(_))) = terminal_size() {
         return width as usize
@@ -161,7 +169,7 @@ fn console_width() -> usize {
     50
 }
 
-// Pad a string with spaces on the right side
+/// Pad a string with spaces on the right side
 fn right_pad(s: &str, width: usize) -> String {
     let mut res = String::from(s);
     while res.len() < width {
@@ -170,7 +178,7 @@ fn right_pad(s: &str, width: usize) -> String {
     res
 }
 
-// Prints file sizes like 4.14 kB, 2.1 GB, etc.
+/// Prints file sizes like 4.14 kB, 2.1 GB, etc.
 fn human_readable_filesize(num: u64, base_1000: bool) -> Result<String, Box<dyn error::Error>> {
     let units = ["B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     let delimiter = if base_1000 { 1000_f64 } else { 1024_f64 };

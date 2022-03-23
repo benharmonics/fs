@@ -12,6 +12,7 @@ pub fn run(args: clap::ArgMatches) -> Result<(), Box<dyn error::Error>> {
         ('s', args.is_present("size")),
         ('h', args.is_present("human-readable")),
         ('b', args.is_present("base-1000")),
+        ('c', args.is_present("case-sensitive")),
     ]);
 
     let bufwtr = BufferWriter::stdout(ColorChoice::Auto);
