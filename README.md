@@ -12,7 +12,7 @@ Run the program with the '--help' flag to get more information.
 ### Cargo
 Clone the repository, then once you've navigated into the project directory:
 ```bash
-cargo install
+cargo install --path .
 ```
 
 By default, Cargo installs new binaries to `$HOME/.cargo/bin`.
